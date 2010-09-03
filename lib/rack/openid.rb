@@ -139,12 +139,7 @@ module Rack #:nodoc:
 
         oidresp = timeout_protection_from_identity_server {
           consumer = ::OpenID::Consumer.new(session, @store)
-
-          # Re-parse the parameters into the format OpenID::Consumer expects them
-          cgi_params = CGI.parse(req.query_string)
-          flat_params = cgi_params.inject({}) { |hsh, pair| hsh[pair[0]] = pair[1][0] ; hsh }
-          
-          consumer.complete(flat_params, req.url)
+          consumer.complete(Rack::Utils.parse_query(req.query_string), req.url)
         }
 
         env[RESPONSE] = oidresp

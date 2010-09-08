@@ -158,17 +158,6 @@ class TestOpenID < Test::Unit::TestCase
     assert_equal '/complete', @response.headers['X-Path']
     assert_equal 'success', @response.body
   end
-  
-  def test_with_nested_params_custom_return_to
-    @app = app(:return_to => 'http://example.org/complete?user[remember_me]=true')
-    process('/', :method => 'GET')
-    follow_redirect!
-    assert_equal 200, @response.status
-    assert_equal 'GET', @response.headers['X-Method']
-    assert_equal '/complete', @response.headers['X-Path']
-    assert_equal 'success', @response.body
-    assert_match(/remember_me/, @response.headers['X-Query-String'])
-  end
 
   def test_with_nested_params_custom_return_to
     url = 'http://example.org/complete?user[remember_me]=true'
@@ -190,6 +179,18 @@ class TestOpenID < Test::Unit::TestCase
     assert_equal 'GET', @response.headers['X-Method']
     assert_equal '/complete', @response.headers['X-Path']
     assert_equal 'success', @response.body
+  end
+  
+  def test_with_post_method_nested_params_custom_return_to
+    url = 'http://example.org/complete?user[remember_me]=true'
+    @app = app(:return_to => url)
+    process('/', :method => 'POST')
+    follow_redirect!
+    assert_equal 200, @response.status
+    assert_equal 'GET', @response.headers['X-Method']
+    assert_equal '/complete', @response.headers['X-Path']
+    assert_equal 'success', @response.body
+    assert_match(/remember_me/, @response.headers['X-Query-String'])
   end
 
   def test_with_custom_return_method

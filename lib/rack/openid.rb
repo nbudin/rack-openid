@@ -136,10 +136,10 @@ module Rack #:nodoc:
         unless session
           raise RuntimeError, "Rack::OpenID requires a session"
         end
-
+        
         oidresp = timeout_protection_from_identity_server {
           consumer = ::OpenID::Consumer.new(session, @store)
-          consumer.complete(Rack::Utils.parse_query(req.query_string), req.url)
+          consumer.complete(flatten_params(req.params), req.url)
         }
 
         env[RESPONSE] = oidresp
@@ -249,6 +249,31 @@ module Rack #:nodoc:
         yield
       rescue Timeout::Error
         TimeoutResponse.new
+      end
+      
+      protected
+      
+      def flatten_params(params)
+        params.inject({}) do |hsh, pair|
+          key, value = pair
+          
+          case value
+          when Hash
+            flatten_params(value).each do |inner_key, inner_value|
+              # Turn keys of the form b[c] into [b][c], then append outer key to get a[b][c]
+              outer_key = key + inner_key.sub(/^([^\[]+)/, "[\\1]")
+              hsh[outer_key] = inner_value
+            end
+          when Array
+            value.each_with_index do |inner_value, i|
+              hsh["key[#{i}]"] = inner_value
+            end
+          else
+            hsh[key] = value
+          end
+          
+          hsh
+        end
       end
   end
 end
